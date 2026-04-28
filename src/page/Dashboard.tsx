@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authstore';
 import { IdentityStatus, Role } from '../types/index';
-import { LogOut, User, Calendar, MapPin, Mail, Shield, RefreshCw } from 'lucide-react';
+import { LogOut, User, Calendar, MapPin, Mail, Shield, RefreshCw, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Dashboard() {
@@ -138,6 +138,13 @@ export default function Dashboard() {
                 >
                   <RefreshCw className="w-4 h-4" />
                   Refresh Profile
+                </button>
+                <button
+                  onClick={() => navigate('/cin')}
+                  className="w-full flex items-center justify-center gap-2 text-sm font-medium text-[var(--slate-600)] bg-[var(--slate-100)] hover:bg-[var(--slate-200)] py-2.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  My CIN
                 </button>
               </div>
             </div>
