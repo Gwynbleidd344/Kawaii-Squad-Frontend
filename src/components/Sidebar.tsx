@@ -79,9 +79,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logo area */}
         <div className="h-16 flex items-center justify-between px-5 flex-shrink-0">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate('/dashboard')}>
-            <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-sm font-bold">D</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
             <span className="text-[var(--text-primary)] font-semibold text-[15px] tracking-tight">
               DIGITALIZEO
             </span>

@@ -61,9 +61,7 @@ export default function Login() {
         {/* Content */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-base font-bold">D</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-md" />
             <div>
               <span className="text-white font-semibold text-lg tracking-tight block leading-tight">DIGITALIZEO</span>
               <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
@@ -107,9 +105,7 @@ export default function Login() {
         <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-base font-bold">K</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
             <div>
               <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
               <span className="text-[var(--text-muted)] text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
