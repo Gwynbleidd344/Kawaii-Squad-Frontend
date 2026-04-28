@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/authstore';
 import type { RegisterRequest } from '../types/index';
-import { Upload } from 'lucide-react';
+import { Upload, Shield, Database, Fingerprint, Lock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
@@ -50,50 +50,118 @@ export default function Register() {
     }
   };
 
+  const features = [
+    { icon: <Shield className="w-5 h-5" />, title: 'Sécurisé', desc: 'Chiffrement de bout en bout' },
+    { icon: <Database className="w-5 h-5" />, title: 'Centralisé', desc: 'Base de données nationale' },
+    { icon: <Fingerprint className="w-5 h-5" />, title: 'Vérifié', desc: 'Identité validée par l\'État' },
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex">
-      {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-[480px] bg-[var(--accent)] flex-col justify-between p-10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">K</span>
+      {/* Left branding panel — dark professional */}
+      <div className="hidden lg:flex lg:w-[520px] bg-[#0F1629] flex-col justify-between p-12 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }} />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
+              <span className="text-white text-base font-bold">K</span>
+            </div>
+            <div>
+              <span className="text-white font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
+            </div>
           </div>
-          <span className="text-white/90 font-semibold text-lg tracking-tight">Kawaii Squad</span>
         </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white leading-tight mb-3">Rejoignez le système<br />d'identité nationale</h2>
-          <p className="text-white/70 text-sm leading-relaxed">Créez votre identité numérique et accédez aux services nationaux de Madagascar.</p>
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-[11px] font-medium mb-6 backdrop-blur-sm">
+            <Lock className="w-3 h-3" />
+            Plateforme gouvernementale sécurisée
+          </div>
+          <h2 className="text-[32px] font-bold text-white leading-[1.2] mb-4 tracking-tight">
+            Rejoignez le système<br />d'identité nationale
+          </h2>
+          <p className="text-white/50 text-[15px] leading-relaxed max-w-[360px]">
+            Créez votre identité numérique et accédez aux services nationaux de la République de Madagascar.
+          </p>
+
+          <div className="mt-10 space-y-3">
+            {features.map((f) => (
+              <div key={f.title} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)] flex-shrink-0">
+                  {f.icon}
+                </div>
+                <div>
+                  <p className="text-white/90 text-sm font-medium">{f.title}</p>
+                  <p className="text-white/40 text-xs mt-0.5">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-white/40 text-xs">© 2026 Kawaii Squad. Tous droits réservés.</p>
+
+        <p className="relative z-10 text-white/25 text-xs">© 2026 Kawaii Squad — Tous droits réservés</p>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6 py-12">
-        <div className="w-full max-w-[460px]">
-          <div className="text-center mb-8">
-            <div className="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[var(--accent)] mb-4">
-              <span className="text-white text-lg font-bold">K</span>
+      <div className="flex-1 flex items-center justify-center p-6 py-12 overflow-y-auto">
+        <div className="w-full max-w-[480px]">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
+              <span className="text-white text-base font-bold">K</span>
             </div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">Créer un compte</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">Configurez votre identité numérique</p>
+            <div>
+              <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-[var(--text-muted)] text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
+            </div>
           </div>
 
-          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-default)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-8">
+          <div className="mb-8">
+            <h1 className="text-[26px] font-bold text-[var(--text-primary)] tracking-tight">Créer un compte</h1>
+            <p className="text-sm text-[var(--text-muted)] mt-2">Configurez votre identité numérique nationale</p>
+          </div>
+
+          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-default)] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] p-7">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              {/* Step indicator */}
+              <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[var(--accent)] text-white text-[11px] font-bold flex items-center justify-center">1</div>
+                  <span className="text-xs font-medium text-[var(--text-primary)]">Identité</span>
+                </div>
+                <div className="flex-1 h-px bg-[var(--border-default)]" />
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] text-[11px] font-bold flex items-center justify-center">2</div>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Compte</span>
+                </div>
+                <div className="flex-1 h-px bg-[var(--border-default)]" />
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] text-[11px] font-bold flex items-center justify-center">3</div>
+                  <span className="text-xs font-medium text-[var(--text-muted)]">Photo</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <Input label="Nom complet" type="text" placeholder="Jean Dupont" {...register('fullName')} error={errors.fullName?.message} />
+                  <Input label="Nom complet" type="text" placeholder="Jean Rakoto" {...register('fullName')} error={errors.fullName?.message} />
                 </div>
-                <Input label="Nom du père" type="text" placeholder="Pierre Dupont" {...register('fatherName')} error={errors.fatherName?.message} />
-                <Input label="Nom de la mère" type="text" placeholder="Marie Dupont" {...register('motherName')} error={errors.motherName?.message} />
+                <Input label="Nom du père" type="text" placeholder="Pierre Rakoto" {...register('fatherName')} error={errors.fatherName?.message} />
+                <Input label="Nom de la mère" type="text" placeholder="Marie Razafy" {...register('motherName')} error={errors.motherName?.message} />
                 <Input label="Date de naissance" type="date" {...register('dateOfBirth')} error={errors.dateOfBirth?.message} />
                 <Input label="Lieu de naissance" type="text" placeholder="Antananarivo" {...register('placeOfBirth')} error={errors.placeOfBirth?.message} />
               </div>
 
               <div className="border-t border-[var(--border-subtle)]" />
 
-              <Input label="Email" type="email" placeholder="vous@exemple.com" {...register('email')} error={errors.email?.message} />
+              <Input label="Adresse email" type="email" placeholder="vous@exemple.com" {...register('email')} error={errors.email?.message} />
               <Input label="Mot de passe" type="password" placeholder="••••••••" {...register('password')} error={errors.password?.message} hint="Min 8 caractères, 1 majuscule, 1 chiffre" />
+
+              <div className="border-t border-[var(--border-subtle)]" />
 
               {/* ID Photo */}
               <div>
@@ -119,15 +187,15 @@ export default function Register() {
                 {errors.idPhoto && <p className="text-xs text-[var(--danger)] mt-1.5">{errors.idPhoto.message}</p>}
               </div>
 
-              <Button type="submit" fullWidth isLoading={isLoading}>Créer le compte</Button>
-
-              <div className="text-center pt-2">
-                <p className="text-sm text-[var(--text-muted)]">
-                  Déjà un compte ?{' '}
-                  <button type="button" onClick={() => navigate('/login')} className="text-[var(--accent)] font-medium hover:text-[var(--accent-hover)] transition-colors cursor-pointer">Se connecter</button>
-                </p>
-              </div>
+              <Button type="submit" fullWidth isLoading={isLoading} size="lg">Créer le compte</Button>
             </form>
+          </div>
+
+          <div className="text-center mt-6">
+            <p className="text-sm text-[var(--text-muted)]">
+              Déjà un compte ?{' '}
+              <button type="button" onClick={() => navigate('/login')} className="text-[var(--accent)] font-medium hover:text-[var(--accent-hover)] transition-colors cursor-pointer">Se connecter</button>
+            </p>
           </div>
         </div>
       </div>

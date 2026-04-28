@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authstore';
 import { IdentityStatus } from '../types/index';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Shield, Database, Fingerprint, Lock } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Adresse email invalide'),
@@ -41,64 +42,133 @@ export default function Login() {
     }
   };
 
+  const features = [
+    { icon: <Shield className="w-5 h-5" />, title: 'Sécurisé', desc: 'Chiffrement de bout en bout' },
+    { icon: <Database className="w-5 h-5" />, title: 'Centralisé', desc: 'Base de données nationale' },
+    { icon: <Fingerprint className="w-5 h-5" />, title: 'Vérifié', desc: 'Identité validée par l\'État' },
+  ];
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex">
-      {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-[480px] bg-[var(--accent)] flex-col justify-between p-10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">K</span>
+      {/* Left branding panel — dark professional */}
+      <div className="hidden lg:flex lg:w-[520px] bg-[#0F1629] flex-col justify-between p-12 relative overflow-hidden">
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }} />
+
+        {/* Content */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
+              <span className="text-white text-base font-bold">K</span>
+            </div>
+            <div>
+              <span className="text-white font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
+            </div>
           </div>
-          <span className="text-white/90 font-semibold text-lg tracking-tight">Kawaii Squad</span>
         </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white leading-tight mb-3">
-            Système de gestion<br />d'identité nationale
+
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-[11px] font-medium mb-6 backdrop-blur-sm">
+            <Lock className="w-3 h-3" />
+            Plateforme gouvernementale sécurisée
+          </div>
+          <h2 className="text-[32px] font-bold text-white leading-[1.2] mb-4 tracking-tight">
+            Système National<br />d'Identité Numérique
           </h2>
-          <p className="text-white/70 text-sm leading-relaxed">
-            Plateforme centralisée de gestion des données d'identité numérique pour Madagascar.
+          <p className="text-white/50 text-[15px] leading-relaxed max-w-[360px]">
+            Plateforme centralisée de gestion et de vérification des identités pour la République de Madagascar.
           </p>
+
+          {/* Feature cards */}
+          <div className="mt-10 space-y-3">
+            {features.map((f) => (
+              <div key={f.title} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)] flex-shrink-0">
+                  {f.icon}
+                </div>
+                <div>
+                  <p className="text-white/90 text-sm font-medium">{f.title}</p>
+                  <p className="text-white/40 text-xs mt-0.5">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-white/40 text-xs">© 2026 Kawaii Squad. Tous droits réservés.</p>
+
+        <p className="relative z-10 text-white/25 text-xs">© 2026 Kawaii Squad — Tous droits réservés</p>
       </div>
 
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-[400px]">
+        <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
-          <div className="text-center mb-8">
-            <div className="lg:hidden inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[var(--accent)] mb-4">
-              <span className="text-white text-lg font-bold">K</span>
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
+              <span className="text-white text-base font-bold">K</span>
             </div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">Bienvenue</h1>
-            <p className="text-sm text-[var(--text-muted)] mt-1">Connectez-vous à votre compte</p>
+            <div>
+              <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-[var(--text-muted)] text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
+            </div>
           </div>
 
-          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-default)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-8">
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-[26px] font-bold text-[var(--text-primary)] tracking-tight">Connexion</h1>
+            <p className="text-sm text-[var(--text-muted)] mt-2">Accédez à votre espace d'identité nationale</p>
+          </div>
+
+          {/* Form card */}
+          <div className="bg-[var(--bg-surface)] rounded-xl border border-[var(--border-default)] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] p-7">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {statusError && (
                 <div className={`p-3.5 rounded-lg text-sm border ${
-                  statusError.status === IdentityStatus.PENDING ? 'bg-[var(--warning-bg)] border-[var(--warning-border)] text-amber-800' : 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-red-800'
+                  statusError.status === IdentityStatus.PENDING
+                    ? 'bg-[var(--warning-bg)] border-[var(--warning-border)] text-amber-800'
+                    : 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-red-800'
                 }`}>
                   <p className="font-medium">{statusError.message}</p>
                   {statusError.reason && <p className="text-xs mt-1 opacity-80">{statusError.reason}</p>}
                 </div>
               )}
 
-              <Input label="Email" type="email" placeholder="vous@exemple.com" {...register('email')} error={errors.email?.message} />
-              <Input label="Mot de passe" type="password" placeholder="••••••••" {...register('password')} error={errors.password?.message} />
+              <Input
+                label="Adresse email"
+                type="email"
+                placeholder="vous@exemple.com"
+                {...register('email')}
+                error={errors.email?.message}
+              />
+              <Input
+                label="Mot de passe"
+                type="password"
+                placeholder="••••••••"
+                {...register('password')}
+                error={errors.password?.message}
+              />
 
-              <Button type="submit" fullWidth isLoading={isLoading}>Se connecter</Button>
-
-              <div className="text-center pt-2">
-                <p className="text-sm text-[var(--text-muted)]">
-                  Pas encore de compte ?{' '}
-                  <button type="button" onClick={() => navigate('/register')} className="text-[var(--accent)] font-medium hover:text-[var(--accent-hover)] transition-colors cursor-pointer">
-                    Créer un compte
-                  </button>
-                </p>
-              </div>
+              <Button type="submit" fullWidth isLoading={isLoading} size="lg">
+                Se connecter
+              </Button>
             </form>
+          </div>
+
+          {/* Bottom link */}
+          <div className="text-center mt-6">
+            <p className="text-sm text-[var(--text-muted)]">
+              Pas encore de compte ?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="text-[var(--accent)] font-medium hover:text-[var(--accent-hover)] transition-colors cursor-pointer"
+              >
+                Créer un compte
+              </button>
+            </p>
           </div>
         </div>
       </div>

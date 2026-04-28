@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCinStore } from '../store/cinStore';
 import { toast } from 'sonner';
-import { Upload, CreditCard, Calendar, MapPin, Mail, CheckCircle } from 'lucide-react';
+import { Upload, CreditCard, Calendar, MapPin, Mail, CheckCircle, Download } from 'lucide-react';
 import { TopBar } from '../components/TopBar';
 import { useAppLayout } from '../components/AppLayout';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
@@ -16,6 +16,29 @@ export default function MyCin() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadCin = async () => {
+    if (!cin?.cinPhotoUrl) return;
+    setIsDownloading(true);
+    try {
+      const response = await fetch(cin.cinPhotoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `CIN-${cin.cinId}.${blob.type.split('/')[1] || 'jpg'}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Téléchargement lancé');
+    } catch {
+      toast.error('Échec du téléchargement');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => { if (!hasFetched) fetchCin(); }, [hasFetched, fetchCin]);
 
@@ -59,17 +82,30 @@ export default function MyCin() {
           {cin ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left — CIN card */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 space-y-3">
                 <Card padding="none" className="overflow-hidden">
                   {cin.cinPhotoUrl && <img src={cin.cinPhotoUrl} alt="CIN Photo" className="w-full aspect-[3/2] object-cover" />}
                   <div className="p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle className="w-4 h-4 text-[var(--success)]" />
-                      <span className="text-xs font-medium text-[var(--success)]">CIN Active</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-[var(--success)]" />
+                        <span className="text-xs font-medium text-[var(--success)]">CIN Active</span>
+                      </div>
                     </div>
                     <p className="text-xs text-[var(--text-muted)]">ID : <span className="font-mono text-[var(--text-secondary)]">{cin.cinId}</span></p>
                   </div>
                 </Card>
+                {cin.cinPhotoUrl && (
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    icon={<Download className="w-4 h-4" />}
+                    onClick={handleDownloadCin}
+                    isLoading={isDownloading}
+                  >
+                    Télécharger la CIN
+                  </Button>
+                )}
               </div>
 
               {/* Right — Details */}
