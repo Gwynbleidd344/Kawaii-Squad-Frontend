@@ -3,12 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
+ "scripts": {
+  "dev": "vite",
+  "build": "tsc -b && vite build",
+  "lint": "eslint .",
+  "preview": "vite preview",
+  "generate-api": "openapi-ts -i ./src/docs/api.yaml -o ./src/api -c @hey-api/client-fetch"
+},
   "dependencies": {
     "@hey-api/client-fetch": "^0.13.1",
     "@hookform/resolvers": "^5.2.2",
