@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest} from "";
-
+import { apiRequest } from "../lib/api";
 export default function AdminDashboard() {
   const [pending, setPending] = useState([]);
 
