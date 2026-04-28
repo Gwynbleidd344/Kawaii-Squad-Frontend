@@ -1,0 +1,465 @@
+openapi: 3.1.0
+
+info:
+  title: Digital Identity API
+  version: 1.0.0
+  description: |
+    Secure backend for a Digital Identity system.
+    - Users register with personal data + an ID photo upload.
+    - Admins review and **approve** or **reject** submissions.
+    - Only `CONFIRMED` users may obtain a JWT and access protected resources.
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://your-production-domain.com
+    description: Production
+
+tags:
+  - name: Health
+  - name: Auth
+  - name: User
+  - name: Admin
+
+# =============================================================================
+# Security Schemes
+# =============================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    AdminMasterSecret:
+      type: apiKey
+      in: header
+      name: x-admin-secret
+      description: Master secret required to bootstrap the first admin account.
+
+  # ===========================================================================
+  # Reusable Schemas
+  # ===========================================================================
+  schemas:
+
+    # ---- Enums ---------------------------------------------------------------
+    IdentityStatus:
+      type: string
+      enum: [PENDING, CONFIRMED, REJECTED]
+
+    Role:
+      type: string
+      enum: [USER, ADMIN]
+
+    # ---- Shared User Response ------------------------------------------------
+    UserPublic:
+      type: object
+      properties:
+        id:            { type: string, example: "clxyz123abc" }
+        fullName:      { type: string, example: "Jane Doe" }
+        fatherName:    { type: string, example: "John Doe" }
+        motherName:    { type: string, example: "Mary Doe" }
+        dateOfBirth:   { type: string, format: date-time }
+        placeOfBirth:  { type: string, example: "Nairobi" }
+        email:         { type: string, format: email }
+        idPhotoUrl:    { type: string, format: uri, nullable: true }
+        role:          { $ref: "#/components/schemas/Role" }
+        status:        { $ref: "#/components/schemas/IdentityStatus" }
+        rejectionReason: { type: string, nullable: true }
+        createdAt:     { type: string, format: date-time }
+        updatedAt:     { type: string, format: date-time }
+
+    # ---- Pagination ----------------------------------------------------------
+    Pagination:
+      type: object
+      properties:
+        page:  { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+        total: { type: integer, example: 47 }
+        pages: { type: integer, example: 3 }
+
+    # ---- Common Errors -------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        message: { type: string }
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        message: { type: string, example: "Validation failed" }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:   { type: string }
+              message: { type: string }
+
+# =============================================================================
+# Paths
+# =============================================================================
+paths:
+
+  # ---------------------------------------------------------------------------
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+
+  # ---------------------------------------------------------------------------
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: |
+        Submit personal information and an ID photo.
+        The account starts in `PENDING` status and must be approved by an admin before login is possible.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [fullName, fatherName, motherName, dateOfBirth, placeOfBirth, email, password, idPhoto]
+              properties:
+                fullName:      { type: string, example: "Jane Doe" }
+                fatherName:    { type: string, example: "John Doe" }
+                motherName:    { type: string, example: "Mary Doe" }
+                dateOfBirth:   { type: string, format: date, example: "1990-06-15" }
+                placeOfBirth:  { type: string, example: "Nairobi" }
+                email:         { type: string, format: email }
+                password:
+                  type: string
+                  minLength: 8
+                  description: "Must contain at least one uppercase letter and one number."
+                idPhoto:
+                  type: string
+                  format: binary
+                  description: "JPEG, PNG, or WebP — max 5 MB."
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user:    { $ref: "#/components/schemas/UserPublic" }
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "413":
+          description: ID photo exceeds 5 MB
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "415":
+          description: Unsupported image format
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" }
+
+  # ---------------------------------------------------------------------------
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate and receive a JWT
+      description: |
+        Returns a JWT only for `CONFIRMED` users.
+        `PENDING` users receive a `403` prompting them to wait for review.
+        `REJECTED` users receive a `403` with the rejection reason.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  token:   { type: string, description: "Bearer JWT" }
+                  user:    { $ref: "#/components/schemas/UserPublic" }
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "403":
+          description: Account is PENDING or REJECTED
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  status:  { $ref: "#/components/schemas/IdentityStatus" }
+                  reason:  { type: string, nullable: true }
+
+  # ---------------------------------------------------------------------------
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the currently authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/UserPublic" }
+        "401": { description: "Unauthorized" }
+        "403": { description: "Identity PENDING or REJECTED" }
+
+  # ---------------------------------------------------------------------------
+  /api/user/profile:
+    get:
+      tags: [User]
+      summary: Get the authenticated user's full profile
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/UserPublic" }
+        "401": { description: "Unauthorized" }
+        "403": { description: "Identity not CONFIRMED" }
+
+  # ---------------------------------------------------------------------------
+  /api/user/status:
+    get:
+      tags: [User]
+      summary: Get identity status (lightweight polling endpoint)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current identity status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:          { $ref: "#/components/schemas/IdentityStatus" }
+                  rejectionReason: { type: string, nullable: true }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/create:
+    post:
+      tags: [Admin]
+      summary: Create an admin account
+      description: |
+        **Two ways to authenticate:**
+        1. `x-admin-secret` header — use for bootstrapping the very first admin.
+        2. Bearer JWT of an existing admin — for creating subsequent admins.
+      security:
+        - AdminMasterSecret: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, fatherName, motherName, dateOfBirth, placeOfBirth, email, password]
+              properties:
+                fullName:      { type: string }
+                fatherName:    { type: string }
+                motherName:    { type: string }
+                dateOfBirth:   { type: string, format: date }
+                placeOfBirth:  { type: string }
+                email:         { type: string, format: email }
+                password:      { type: string, minLength: 8 }
+      responses:
+        "201":
+          description: Admin created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  admin:   { $ref: "#/components/schemas/UserPublic" }
+        "401": { description: "Missing or invalid secret / JWT" }
+        "409": { description: "Email already in use" }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/identities/pending:
+    get:
+      tags: [Admin]
+      summary: List PENDING identity submissions
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        "200":
+          description: Paginated list of PENDING users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserPublic" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+        "401": { description: "Unauthorized" }
+        "403": { description: "Admin role required" }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/identities:
+    get:
+      tags: [Admin]
+      summary: List all identities (optional status filter)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/IdentityStatus" }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        "200":
+          description: Paginated list of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserPublic" }
+                  pagination: { $ref: "#/components/schemas/Pagination" }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/identities/{id}:
+    get:
+      tags: [Admin]
+      summary: Get full detail of a single identity
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/UserPublic" }
+        "404": { description: "User not found" }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/identities/{id}/approve:
+    patch:
+      tags: [Admin]
+      summary: Approve a PENDING identity
+      description: Changes status to `CONFIRMED` and sends a confirmation email.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Identity approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user:    { $ref: "#/components/schemas/UserPublic" }
+        "404": { description: "User not found" }
+        "409": { description: "Identity is not PENDING" }
+
+  # ---------------------------------------------------------------------------
+  /api/admin/identities/{id}/reject:
+    patch:
+      tags: [Admin]
+      summary: Reject a PENDING identity
+      description: Changes status to `REJECTED` and sends a rejection email with the reason.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  example: "The uploaded photo does not clearly show the document. Please resubmit with a clearer image."
+      responses:
+        "200":
+          description: Identity rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  user:    { $ref: "#/components/schemas/UserPublic" }
+        "404": { description: "User not found" }
+        "409": { description: "Identity is not PENDING" }
+        "422": { description: "Reason is required" }
