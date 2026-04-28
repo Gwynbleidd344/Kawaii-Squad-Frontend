@@ -66,10 +66,8 @@ export default function Register() {
         }} />
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-base font-bold">K</span>
-            </div>
+          <div className="flex items-center gap-3 mb-0">
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-md" />
             <div>
               <span className="text-white font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
               <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
@@ -112,9 +110,7 @@ export default function Register() {
         <div className="w-full max-w-[480px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-base font-bold">K</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
             <div>
               <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
               <span className="text-[var(--text-muted)] text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
@@ -165,7 +161,7 @@ export default function Register() {
 
               {/* ID Photo */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Photo d'identité</label>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Copie d'acte de naissance</label>
                 <div className="relative border-2 border-dashed border-[var(--border-default)] rounded-xl p-6 text-center hover:border-[var(--accent)] transition-colors cursor-pointer"
                   onClick={() => document.getElementById('id-photo-input')?.click()}>
                   <input id="id-photo-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleIdPhotoChange} className="hidden" />
