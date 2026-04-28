@@ -1,57 +1,66 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
 import { useCinStore } from '../store/cinStore';
-import { useAuthStore } from '../store/authstore';
-import { Role } from '../types/index';
 import { toast } from 'sonner';
-import {
-  LogOut,
-  Shield,
-  Upload,
-  CreditCard,
-  Calendar,
-  MapPin,
-  Mail,
-  User,
-  ArrowLeft,
-  CheckCircle,
-} from 'lucide-react';
+import { Upload, CreditCard, Calendar, MapPin, Mail, CheckCircle, Download } from 'lucide-react';
+import { TopBar } from '../components/TopBar';
+import { useAppLayout } from '../components/AppLayout';
+import { Card, CardHeader, CardTitle } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
+import { InfoField } from '../components/ui/InfoField';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 
 export default function MyCin() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
   const { cin, isLoading, hasFetched, fetchCin, createCin } = useCinStore();
+  const { toggleSidebar } = useAppLayout();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  useEffect(() => {
-    if (!hasFetched) {
-      fetchCin();
+  const handleDownloadCin = async () => {
+    if (!cin) return;
+    setIsDownloading(true);
+    try {
+      const element = document.getElementById('cin-export-card');
+      if (!element) throw new Error("Élément d'export introuvable");
+
+      // Use html-to-image to avoid oklch parsing errors from html2canvas
+      const dataUrl = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 3,
+        backgroundColor: '#FFFFFF',
+      });
+      
+      // Credit card size in mm: 85.6 x 53.98
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [85.6, 53.98]
+      });
+
+      pdf.addImage(dataUrl, 'PNG', 0, 0, 85.6, 53.98);
+      pdf.save(`CIN-${cin.cinId}.pdf`);
+      
+      toast.success('CIN téléchargée avec succès en PDF');
+    } catch (err) {
+      console.error(err);
+      toast.error('Échec du téléchargement PDF');
+    } finally {
+      setIsDownloading(false);
     }
-  }, [hasFetched, fetchCin]);
-
-  const handleLogout = () => {
-    logout();
-    toast.success('Signed out');
-    navigate('/login');
   };
+
+  useEffect(() => { if (!hasFetched) fetchCin(); }, [hasFetched, fetchCin]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Only JPEG, PNG, or WebP images are accepted');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large. Maximum size is 5 MB');
-      return;
-    }
-
+    if (!validTypes.includes(file.type)) { toast.error('Seuls les formats JPEG, PNG ou WebP sont acceptés'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Fichier trop volumineux. Maximum 5 Mo'); return; }
     setSelectedFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setPreviewUrl(reader.result as string);
@@ -59,289 +68,219 @@ export default function MyCin() {
   };
 
   const handleCreate = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a CIN photo first');
-      return;
-    }
+    if (!selectedFile) { toast.error('Veuillez sélectionner une photo'); return; }
     setIsUploading(true);
-    try {
-      await createCin(selectedFile);
-      toast.success('CIN created successfully!');
-      setSelectedFile(null);
-      setPreviewUrl(null);
-    } catch (error: any) {
-      if (error?.status === 409) {
-        toast.info('A CIN already exists for your account');
-      } else {
-        toast.error(error?.message || 'Failed to create CIN');
-      }
-    } finally {
-      setIsUploading(false);
-    }
+    try { await createCin(selectedFile); toast.success('CIN créée avec succès !'); setSelectedFile(null); setPreviewUrl(null); }
+    catch (error: any) {
+      if (error?.status === 409) toast.info('Une CIN existe déjà pour votre compte');
+      else toast.error(error?.message || 'Échec de la création');
+    } finally { setIsUploading(false); }
   };
 
-  // Loading state
   if (isLoading && !hasFetched) {
     return (
-      <div className="min-h-screen bg-[var(--slate-50)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-[3px] border-[var(--slate-200)] border-t-[var(--brand-600)] rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-[var(--slate-500)]">Loading CIN…</p>
-        </div>
-      </div>
+      <>
+        <TopBar title="Carte d'Identité Nationale" onMenuClick={toggleSidebar} />
+        <div className="flex-1 flex items-center justify-center"><Spinner size="lg" /></div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--slate-50)]">
-      {/* Top nav */}
-      <header className="bg-white border-b border-[var(--slate-200)]">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[var(--brand-600)] flex items-center justify-center">
-              <span className="text-white text-sm font-bold">K</span>
-            </div>
-            <span className="text-[var(--slate-900)] font-semibold text-lg tracking-tight">
-              Kawaii Squad
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--slate-500)] px-3 py-2 rounded-lg hover:bg-[var(--slate-100)] transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Profile
-            </button>
-            {user?.role === Role.ADMIN && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="flex items-center gap-2 text-sm font-medium text-[var(--brand-600)] px-3 py-2 rounded-lg hover:bg-[var(--brand-50)] transition-colors cursor-pointer"
-              >
-                <Shield className="w-4 h-4" />
-                Admin
-              </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--slate-500)] hover:text-[var(--slate-700)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--slate-100)] cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+    <>
+      <TopBar title="Carte d'Identité Nationale" subtitle="Votre carte d'identité numérique officielle" icon={<CreditCard className="w-5 h-5" />} onMenuClick={toggleSidebar} />
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* Page header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[var(--slate-900)] tracking-tight flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-[var(--slate-400)]" />
-            Carte d'Identité Nationale
-          </h1>
-          <p className="text-sm text-[var(--slate-500)] mt-1">
-            Your official digital identity card
-          </p>
-        </div>
-
-        {cin ? (
-          /* ─── CIN EXISTS — display it ──────────────────────────────────────── */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left — CIN card */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl border border-[var(--slate-200)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <main className="flex-1 overflow-y-auto relative">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+          {cin ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left — CIN card */}
+              <div className="lg:col-span-1 space-y-3">
+                <Card padding="none" className="overflow-hidden">
+                  {cin.cinPhotoUrl && <img src={cin.cinPhotoUrl} alt="CIN Photo" className="w-full aspect-[3/2] object-cover" />}
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-[var(--success)]" />
+                        <span className="text-xs font-medium text-[var(--success)]">CIN Active</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)]">ID : <span className="font-mono text-[var(--text-secondary)]">{cin.cinId}</span></p>
+                  </div>
+                </Card>
                 {cin.cinPhotoUrl && (
-                  <img
-                    src={cin.cinPhotoUrl}
-                    alt="CIN Photo"
-                    className="w-full aspect-[3/2] object-cover"
-                  />
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    icon={<Download className="w-4 h-4" />}
+                    onClick={handleDownloadCin}
+                    isLoading={isDownloading}
+                  >
+                    Télécharger la CIN en PDF
+                  </Button>
                 )}
-                <div className="p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle className="w-4 h-4 text-[var(--success)]" />
-                    <span className="text-xs font-medium text-[var(--success)]">Active CIN</span>
-                  </div>
-                  <p className="text-xs text-[var(--slate-400)]">
-                    ID: <span className="font-mono text-[var(--slate-600)]">{cin.cinId}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right — Details */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Owner info */}
-              <div className="bg-white rounded-2xl border border-[var(--slate-200)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6">
-                <h3 className="text-base font-semibold text-[var(--slate-900)] mb-5">
-                  Cardholder Information
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-                  <InfoField label="Full Name" value={cin.owner.fullName} />
-                  <InfoField label="Father's Name" value={cin.owner.fatherName} />
-                  <InfoField label="Mother's Name" value={cin.owner.motherName} />
-                  <InfoField
-                    label="Date of Birth"
-                    value={new Date(cin.owner.dateOfBirth).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                    icon={<Calendar className="w-3.5 h-3.5" />}
-                  />
-                  <InfoField
-                    label="Place of Birth"
-                    value={cin.owner.placeOfBirth}
-                    icon={<MapPin className="w-3.5 h-3.5" />}
-                  />
-                  <InfoField
-                    label="Email"
-                    value={cin.owner.email}
-                    icon={<Mail className="w-3.5 h-3.5" />}
-                  />
-                </div>
               </div>
 
-              {/* Meta info */}
-              <div className="bg-white rounded-2xl border border-[var(--slate-200)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6">
-                <h3 className="text-base font-semibold text-[var(--slate-900)] mb-5">
-                  Card Details
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-                  <div>
-                    <p className="text-xs font-medium text-[var(--slate-400)] uppercase tracking-wider mb-1">
-                      CIN ID
-                    </p>
-                    <p className="text-sm text-[var(--slate-900)] font-mono">{cin.cinId}</p>
+              {/* Right — Details */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader><CardTitle>Informations du titulaire</CardTitle></CardHeader>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                    <InfoField label="Nom complet" value={cin.owner.fullName} />
+                    <InfoField label="Nom du père" value={cin.owner.fatherName} />
+                    <InfoField label="Nom de la mère" value={cin.owner.motherName} />
+                    <InfoField label="Date de naissance" value={new Date(cin.owner.dateOfBirth).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })} icon={<Calendar className="w-3.5 h-3.5" />} />
+                    <InfoField label="Lieu de naissance" value={cin.owner.placeOfBirth} icon={<MapPin className="w-3.5 h-3.5" />} />
+                    <InfoField label="Email" value={cin.owner.email} icon={<Mail className="w-3.5 h-3.5" />} />
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-[var(--slate-400)] uppercase tracking-wider mb-1">
-                      Status
-                    </p>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] border border-emerald-200">
-                      <CheckCircle className="w-3 h-3" />
-                      CONFIRMED
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-[var(--slate-400)] uppercase tracking-wider mb-1">
-                      Issued
-                    </p>
-                    <p className="text-sm text-[var(--slate-700)]">
-                      {new Date(cin.issuedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-[var(--slate-400)] uppercase tracking-wider mb-1">
-                      Last Updated
-                    </p>
-                    <p className="text-sm text-[var(--slate-700)]">
-                      {new Date(cin.updatedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* ─── NO CIN — create form ────────────────────────────────────────── */
-          <div className="max-w-lg mx-auto">
-            <div className="bg-white rounded-2xl border border-[var(--slate-200)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-8 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--brand-50)] mb-5">
-                <CreditCard className="w-8 h-8 text-[var(--brand-400)]" />
-              </div>
+                </Card>
 
-              <h2 className="text-lg font-semibold text-[var(--slate-900)] mb-2">
-                Create Your CIN
-              </h2>
-              <p className="text-sm text-[var(--slate-500)] mb-6">
-                Upload a photo to generate your Carte d'Identité Nationale
-              </p>
-
-              {/* Upload zone */}
-              <div
-                className="relative border-2 border-dashed border-[var(--slate-200)] rounded-xl p-8 hover:border-[var(--brand-400)] transition-colors cursor-pointer mb-6"
-                onClick={() => document.getElementById('cin-photo-input')?.click()}
-              >
-                <input
-                  id="cin-photo-input"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                {previewUrl ? (
-                  <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden">
-                    <img
-                      src={previewUrl}
-                      alt="CIN Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <span className="text-white text-sm font-medium">Change photo</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-3">
-                    <Upload className="w-10 h-10 text-[var(--slate-300)]" />
+                <Card>
+                  <CardHeader><CardTitle>Détails de la carte</CardTitle></CardHeader>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                    <InfoField label="CIN ID" value={cin.cinId} mono />
                     <div>
-                      <p className="text-sm font-medium text-[var(--slate-600)]">
-                        Click to upload CIN photo
-                      </p>
-                      <p className="text-xs text-[var(--slate-400)] mt-1">
-                        JPEG, PNG, or WebP — max 5 MB
-                      </p>
+                      <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-1">Statut</p>
+                      <Badge variant="success" icon={<CheckCircle className="w-3 h-3" />}>CONFIRMÉ</Badge>
                     </div>
+                    <InfoField label="Délivrée le" value={new Date(cin.issuedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} />
+                    <InfoField label="Mise à jour" value={new Date(cin.updatedAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })} />
                   </div>
-                )}
+                </Card>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-lg mx-auto">
+              <Card padding="lg" className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-[var(--accent-subtle)] mb-5">
+                  <CreditCard className="w-8 h-8 text-[var(--accent)]" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Créer votre CIN</h2>
+                <p className="text-sm text-[var(--text-muted)] mb-6">Téléchargez une photo pour générer votre Carte d'Identité Nationale</p>
+
+                <div className="relative border-2 border-dashed border-[var(--border-default)] rounded-xl p-8 hover:border-[var(--accent)] transition-colors cursor-pointer mb-6"
+                  onClick={() => document.getElementById('cin-photo-input')?.click()}>
+                  <input id="cin-photo-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+                  {previewUrl ? (
+                    <div className="relative w-full aspect-[3/2] rounded-lg overflow-hidden">
+                      <img src={previewUrl} alt="Aperçu" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-white text-sm font-medium">Changer la photo</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3">
+                      <Upload className="w-10 h-10 text-[var(--text-muted)]" />
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-secondary)]">Cliquez pour télécharger</p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">JPEG, PNG ou WebP — max 5 Mo</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Button fullWidth onClick={handleCreate} disabled={!selectedFile} isLoading={isUploading}>Créer la CIN</Button>
+              </Card>
+            </div>
+          )}
+        </div>
+
+        {/* ── Hidden template for PDF export ────────────────────────────────────────── */}
+        {cin && (
+          <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none">
+            {/* The proportion 856x540 approximates 85.6mm x 54mm (Credit card ID-1 size) x 10 */}
+            <div id="cin-export-card" className="w-[856px] h-[540px] relative overflow-hidden" style={{ boxSizing: 'border-box', border: '2px solid #E8ECF1', padding: '24px', backgroundColor: '#FFFFFF' }}>
+              
+              {/* Background watermark effect */}
+              <div className="absolute inset-0 opacity-[0.03] z-0" style={{
+                backgroundImage: `radial-gradient(circle at 2px 2px, #000000 1px, transparent 0)`,
+                backgroundSize: '24px 24px',
+              }}></div>
+              
+              <div className="absolute -right-20 -bottom-20 opacity-[0.02] z-0" style={{ color: '#000000' }}>
+                <CreditCard className="w-[400px] h-[400px]" />
               </div>
 
-              <button
-                onClick={handleCreate}
-                disabled={!selectedFile || isUploading}
-                className="w-full bg-[var(--brand-600)] text-white font-medium py-2.5 rounded-xl hover:bg-[var(--brand-700)] active:bg-[var(--brand-800)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm cursor-pointer"
-              >
-                {isUploading ? 'Creating CIN…' : 'Create CIN'}
-              </button>
+              {/* Header: Flag colors and Country Name */}
+              <div className="relative z-10 flex flex-col items-center mb-6">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }} />
+                  <div className="w-6 h-4" style={{ backgroundColor: '#EF4444' }} />
+                  <div className="w-6 h-4" style={{ backgroundColor: '#10B981' }} />
+                </div>
+                <h1 className="text-2xl font-bold tracking-widest uppercase m-0 leading-tight" style={{ color: '#111827' }}>Repoblikan'i Madagasikara</h1>
+                <p className="text-[13px] font-medium uppercase tracking-widest mt-1" style={{ color: '#6B7280' }}>Carte d'Identité Nationale / Karapanondrom-Pirenena</p>
+              </div>
+
+              {/* Body: Photo + Info */}
+              <div className="relative z-10 flex gap-8">
+                {/* Photo Side */}
+                <div className="w-[180px] shrink-0 flex flex-col items-center">
+                  <div className="w-[180px] h-[240px] rounded-xl overflow-hidden border-[3px] shadow-sm relative mb-4" style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB' }}>
+                    {cin.cinPhotoUrl && (
+                      <img src={cin.cinPhotoUrl} alt="Photo" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                    )}
+                  </div>
+                  <div className="text-center w-full">
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Numéro / Laharana</p>
+                    <p className="text-lg font-mono font-bold py-1.5 px-2 rounded-lg break-all leading-tight border shadow-inner" style={{ color: '#111827', backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }}>
+                      {cin.cinId}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Info Side */}
+                <div className="flex-1 flex flex-col justify-center space-y-4 pt-2">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Nom et Prénoms / Anarana sy Fanampiny</p>
+                    <p className="text-xl font-bold leading-tight" style={{ color: '#111827' }}>{cin.owner.fullName}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Né(e) le / Teraka tamin'ny</p>
+                      <p className="text-[17px] font-semibold leading-tight" style={{ color: '#1F2937' }}>
+                        {new Date(cin.owner.dateOfBirth).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>À / Tao</p>
+                      <p className="text-[17px] font-semibold leading-tight" style={{ color: '#1F2937' }}>{cin.owner.placeOfBirth}</p>
+                    </div>
+                  </div>
+
+                  <div className="py-2 border-y border-dashed grid grid-cols-2 gap-4" style={{ borderColor: '#D1D5DB' }}>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Fils de / Zanak'i</p>
+                      <p className="text-[16px] font-medium leading-tight" style={{ color: '#1F2937' }}>{cin.owner.fatherName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Et de / Sy</p>
+                      <p className="text-[16px] font-medium leading-tight" style={{ color: '#1F2937' }}>{cin.owner.motherName}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Délivrée le / Nomena tamin'ny</p>
+                      <p className="text-[15px] font-semibold leading-tight" style={{ color: '#1F2937' }}>
+                        {new Date(cin.issuedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Signature de l'autorité</p>
+                      <div className="mt-2 italic font-serif text-[17px]" style={{ color: '#D1D5DB' }}>
+                         Digitalement certifiée
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
       </main>
-    </div>
-  );
-}
-
-/* ─── Info field component ─────────────────────────────────────────────────── */
-
-function InfoField({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-[var(--slate-400)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-        {icon}
-        {label}
-      </p>
-      <p className="text-sm text-[var(--slate-900)] font-medium">{value}</p>
-    </div>
+    </>
   );
 }
