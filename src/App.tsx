@@ -11,7 +11,6 @@ import AdminDashboard from './page/AdminDashboard';
 import IdentityDetail from './page/IdentityDetail';
 import CreateAdmin from './page/CreateAdmin';
 import MyCin from './page/MyCin';
-import './App.css';
 
 function App() {
   const { checkAuthStatus } = useAuthStore();
@@ -22,7 +21,16 @@ function App() {
 
   return (
     <Router>
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            borderRadius: '8px',
+          },
+        }}
+      />
       <Routes>
         {/* Public Routes */}
         <Route path="/register" element={<Register />} />

@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authstore';
 import { Role, IdentityStatus } from '../types/index';
+import { AppLayout } from './AppLayout';
+import { Spinner } from './ui/Spinner';
 
 interface AuthLayoutProps {
   requireAdmin?: boolean;
@@ -10,6 +12,7 @@ interface AuthLayoutProps {
 
 /**
  * AuthLayout - Protected route wrapper
+ * Wraps protected routes with AppLayout (sidebar + content area)
  * Checks authentication and user status before allowing access
  */
 export function AuthLayout({
@@ -29,10 +32,10 @@ export function AuthLayout({
   // Still loading auth status
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[var(--slate-50)] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-[3px] border-[var(--slate-200)] border-t-[var(--brand-600)] rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm text-[var(--slate-500)] font-medium">Loading…</p>
+          <Spinner size="lg" className="mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-muted)] font-medium">Chargement…</p>
         </div>
       </div>
     );
@@ -63,7 +66,11 @@ export function AuthLayout({
     return <Navigate to="/pending-approval" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
 }
 
 /**
