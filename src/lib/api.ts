@@ -4,8 +4,9 @@ import { useAuthStore } from '../store/authStore';
 
 // Configuration du client généré par OpenAPI-TS
 client.setConfig({
-  baseUrl: 'http://localhost:3000', // Correspond aux chemins /api/... du YAML
+  baseUrl: 'http://localhost:3000/api',
 });
+
 
 // Injection automatique du Token JWT
 client.interceptors.request.use((request) => {

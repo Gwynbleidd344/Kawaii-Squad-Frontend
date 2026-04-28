@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
-import { apiRequest } from "../../lib/api"; // Si vous n'utilisez pas openapi-ts, sinon utilisez la fonction générée
 
 export default function Login() {
   const [email, setEmail] = useState("");
