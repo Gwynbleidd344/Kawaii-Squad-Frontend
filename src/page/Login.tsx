@@ -107,7 +107,7 @@ export default function Login() {
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
             <div>
-              <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-[var(--text-primary)] font-semibold text-lg tracking-tight block leading-tight">DIGITALIZEO</span>
               <span className="text-[var(--text-muted)] text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
             </div>
           </div>
