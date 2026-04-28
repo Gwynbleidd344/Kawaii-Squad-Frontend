@@ -80,10 +80,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className="h-16 flex items-center justify-between px-5 flex-shrink-0">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigate('/dashboard')}>
             <div className="w-8 h-8 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-sm font-bold">K</span>
+              <span className="text-white text-sm font-bold">D</span>
             </div>
             <span className="text-[var(--text-primary)] font-semibold text-[15px] tracking-tight">
-              Kawaii Squad
+              DIGITALIZEO
             </span>
           </div>
           <button

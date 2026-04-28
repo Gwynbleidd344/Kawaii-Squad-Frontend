@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useCinStore } from '../store/cinStore';
 import { toast } from 'sonner';
 import { Upload, CreditCard, Calendar, MapPin, Mail, CheckCircle, Download } from 'lucide-react';
@@ -9,6 +9,8 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { InfoField } from '../components/ui/InfoField';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 
 export default function MyCin() {
   const { cin, isLoading, hasFetched, fetchCin, createCin } = useCinStore();
@@ -19,22 +21,33 @@ export default function MyCin() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadCin = async () => {
-    if (!cin?.cinPhotoUrl) return;
+    if (!cin) return;
     setIsDownloading(true);
     try {
-      const response = await fetch(cin.cinPhotoUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `CIN-${cin.cinId}.${blob.type.split('/')[1] || 'jpg'}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Téléchargement lancé');
-    } catch {
-      toast.error('Échec du téléchargement');
+      const element = document.getElementById('cin-export-card');
+      if (!element) throw new Error("Élément d'export introuvable");
+
+      // Use html-to-image to avoid oklch parsing errors from html2canvas
+      const dataUrl = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 3,
+        backgroundColor: '#FFFFFF',
+      });
+      
+      // Credit card size in mm: 85.6 x 53.98
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [85.6, 53.98]
+      });
+
+      pdf.addImage(dataUrl, 'PNG', 0, 0, 85.6, 53.98);
+      pdf.save(`CIN-${cin.cinId}.pdf`);
+      
+      toast.success('CIN téléchargée avec succès en PDF');
+    } catch (err) {
+      console.error(err);
+      toast.error('Échec du téléchargement PDF');
     } finally {
       setIsDownloading(false);
     }
@@ -77,7 +90,7 @@ export default function MyCin() {
     <>
       <TopBar title="Carte d'Identité Nationale" subtitle="Votre carte d'identité numérique officielle" icon={<CreditCard className="w-5 h-5" />} onMenuClick={toggleSidebar} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto relative">
         <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
           {cin ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -103,7 +116,7 @@ export default function MyCin() {
                     onClick={handleDownloadCin}
                     isLoading={isDownloading}
                   >
-                    Télécharger la CIN
+                    Télécharger la CIN en PDF
                   </Button>
                 )}
               </div>
@@ -171,6 +184,102 @@ export default function MyCin() {
             </div>
           )}
         </div>
+
+        {/* ── Hidden template for PDF export ────────────────────────────────────────── */}
+        {cin && (
+          <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none">
+            {/* The proportion 856x540 approximates 85.6mm x 54mm (Credit card ID-1 size) x 10 */}
+            <div id="cin-export-card" className="w-[856px] h-[540px] relative overflow-hidden" style={{ boxSizing: 'border-box', border: '2px solid #E8ECF1', padding: '24px', backgroundColor: '#FFFFFF' }}>
+              
+              {/* Background watermark effect */}
+              <div className="absolute inset-0 opacity-[0.03] z-0" style={{
+                backgroundImage: `radial-gradient(circle at 2px 2px, #000000 1px, transparent 0)`,
+                backgroundSize: '24px 24px',
+              }}></div>
+              
+              <div className="absolute -right-20 -bottom-20 opacity-[0.02] z-0" style={{ color: '#000000' }}>
+                <CreditCard className="w-[400px] h-[400px]" />
+              </div>
+
+              {/* Header: Flag colors and Country Name */}
+              <div className="relative z-10 flex flex-col items-center mb-6">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-6 h-4 border" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }} />
+                  <div className="w-6 h-4" style={{ backgroundColor: '#EF4444' }} />
+                  <div className="w-6 h-4" style={{ backgroundColor: '#10B981' }} />
+                </div>
+                <h1 className="text-2xl font-bold tracking-widest uppercase m-0 leading-tight" style={{ color: '#111827' }}>Repoblikan'i Madagasikara</h1>
+                <p className="text-[13px] font-medium uppercase tracking-widest mt-1" style={{ color: '#6B7280' }}>Carte d'Identité Nationale / Karapanondrom-Pirenena</p>
+              </div>
+
+              {/* Body: Photo + Info */}
+              <div className="relative z-10 flex gap-8">
+                {/* Photo Side */}
+                <div className="w-[180px] shrink-0 flex flex-col items-center">
+                  <div className="w-[180px] h-[240px] rounded-xl overflow-hidden border-[3px] shadow-sm relative mb-4" style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB' }}>
+                    {cin.cinPhotoUrl && (
+                      <img src={cin.cinPhotoUrl} alt="Photo" className="w-full h-full object-cover" crossOrigin="anonymous" />
+                    )}
+                  </div>
+                  <div className="text-center w-full">
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Numéro / Laharana</p>
+                    <p className="text-lg font-mono font-bold py-1.5 px-2 rounded-lg break-all leading-tight border shadow-inner" style={{ color: '#111827', backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }}>
+                      {cin.cinId}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Info Side */}
+                <div className="flex-1 flex flex-col justify-center space-y-4 pt-2">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Nom et Prénoms / Anarana sy Fanampiny</p>
+                    <p className="text-xl font-bold leading-tight" style={{ color: '#111827' }}>{cin.owner.fullName}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Né(e) le / Teraka tamin'ny</p>
+                      <p className="text-[17px] font-semibold leading-tight" style={{ color: '#1F2937' }}>
+                        {new Date(cin.owner.dateOfBirth).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>À / Tao</p>
+                      <p className="text-[17px] font-semibold leading-tight" style={{ color: '#1F2937' }}>{cin.owner.placeOfBirth}</p>
+                    </div>
+                  </div>
+
+                  <div className="py-2 border-y border-dashed grid grid-cols-2 gap-4" style={{ borderColor: '#D1D5DB' }}>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Fils de / Zanak'i</p>
+                      <p className="text-[16px] font-medium leading-tight" style={{ color: '#1F2937' }}>{cin.owner.fatherName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Et de / Sy</p>
+                      <p className="text-[16px] font-medium leading-tight" style={{ color: '#1F2937' }}>{cin.owner.motherName}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Délivrée le / Nomena tamin'ny</p>
+                      <p className="text-[15px] font-semibold leading-tight" style={{ color: '#1F2937' }}>
+                        {new Date(cin.issuedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9CA3AF' }}>Signature de l'autorité</p>
+                      <div className="mt-2 italic font-serif text-[17px]" style={{ color: '#D1D5DB' }}>
+                         Digitalement certifiée
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
       </main>
     </>
   );

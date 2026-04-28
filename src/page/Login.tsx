@@ -62,10 +62,10 @@ export default function Login() {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
             <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
-              <span className="text-white text-base font-bold">K</span>
+              <span className="text-white text-base font-bold">D</span>
             </div>
             <div>
-              <span className="text-white font-semibold text-lg tracking-tight block leading-tight">Kawaii Squad</span>
+              <span className="text-white font-semibold text-lg tracking-tight block leading-tight">DIGITALIZEO</span>
               <span className="text-white/40 text-[11px] font-medium uppercase tracking-wider">Madagascar</span>
             </div>
           </div>
