@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAdminStore } from '../store/adminStore';
 import { IdentityStatus } from '../types/index';
 import { toast } from 'sonner';
-import { ArrowLeft, Calendar, MapPin, Mail, Shield, Clock, CheckCircle, XCircle, User, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Mail, Shield, Clock, CheckCircle, XCircle, User, AlertTriangle, Eye, X } from 'lucide-react';
 import { TopBar } from '../components/TopBar';
 import { useAppLayout } from '../components/AppLayout';
 import { Card, CardHeader, CardTitle } from '../components/ui/Card';
@@ -36,10 +36,17 @@ export default function IdentityDetail() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false);
 
   useEffect(() => {
     if (id) { fetchIdentityDetail(id).catch(() => { toast.error('Échec du chargement'); navigate('/admin'); }); }
   }, [id]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsPhotoOpen(false); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleApprove = async () => {
     if (!id) return;
@@ -92,7 +99,15 @@ export default function IdentityDetail() {
               <Card>
                 <div className="flex flex-col items-center text-center">
                   {identity.idPhotoUrl ? (
-                    <img src={identity.idPhotoUrl} alt="ID Photo" className="w-full max-w-[200px] rounded-xl object-cover border-2 border-[var(--border-subtle)] mb-4" />
+                    <div 
+                      className="relative w-full max-w-[200px] mb-4 group cursor-zoom-in rounded-xl overflow-hidden border-2 border-[var(--border-subtle)]"
+                      onClick={() => setIsPhotoOpen(true)}
+                    >
+                      <img src={identity.idPhotoUrl} alt="ID Photo" className="w-full aspect-square object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-32 h-32 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center mb-4">
                       <User className="w-12 h-12 text-[var(--accent)]" />
@@ -172,6 +187,33 @@ export default function IdentityDetail() {
           </div>
         </div>
       </main>
+
+      {/* Photo Modal Overlay */}
+      {isPhotoOpen && identity.idPhotoUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex justify-center items-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in"
+          onClick={() => setIsPhotoOpen(false)}
+        >
+          <div className="relative max-w-[95vw] max-h-[95vh] flex flex-col items-center">
+            {/* Close button positioned at the top right of the modal explicitly */}
+            <button 
+              className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white bg-black/20 hover:bg-black/50 rounded-full transition-colors"
+              onClick={(e) => { e.stopPropagation(); setIsPhotoOpen(false); }}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img 
+              src={identity.idPhotoUrl} 
+              alt="ID Photo Full Size" 
+              className="w-auto h-auto max-w-full max-h-[85vh] rounded-lg shadow-2xl border border-white/20 select-none"
+              onClick={(e) => e.stopPropagation()} 
+            />
+            <p className="text-white/70 text-sm mt-4 font-medium tracking-wide bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-md">
+              Aperçu du document
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 }
