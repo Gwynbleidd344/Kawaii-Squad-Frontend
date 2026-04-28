@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { apiRequest } from "../lib/api";
-
 export default function Register() {
   const [formData, setFormData] = useState({
     fullName: "", email: "", password: "", fatherName: "", motherName: "", 
